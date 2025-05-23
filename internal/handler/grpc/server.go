@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/validator"
 	"github.com/hoangdv99/morgana/internal/generated/github.com/hoangdv99/morgana/morgana"
 	"google.golang.org/grpc"
 )
@@ -24,7 +25,14 @@ func (s *server) Start(ctx context.Context) error {
 
 	defer listener.Close()
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			validator.UnaryServerInterceptor(),
+		),
+		grpc.ChainStreamInterceptor(
+			validator.StreamServerInterceptor(),
+		),
+	)
 	morgana.RegisterMorganaServiceServer(server, s.handler)
 	return server.Serve(listener)
 }

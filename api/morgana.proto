@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package morgana;
 
+import "api/validate.proto";
+
 option go_package = "grpc/morgana";
 
 service MorganaService {
@@ -41,16 +43,24 @@ message DownloadTask {
 }
 
 message CreateAccountRequest {
-    string username = 1;
-    string password = 2;
+    string username = 1 [(validate.rules).string = {
+        pattern:   "^[a-zA-Z0-9]{6,32}$",
+    }];
+    string password = 2 [(validate.rules).string = {
+        pattern:   "^[a-zA-Z0-9]{6,32}$",
+    }];
 }
 message CreateAccountResponse {
     uint64 id = 1;
 }
 
 message CreateSessionRequest {
-    string username = 1;
-    string password = 2;
+    string username = 1 [(validate.rules).string = {
+        pattern:   "^[a-zA-Z0-9]{6,32}$",
+    }];
+    string password = 2 [(validate.rules).string = {
+        pattern:   "^[a-zA-Z0-9]{6,32}$",
+    }];
 }
 message CreateSessionResponse {
     string token = 1;
@@ -59,7 +69,9 @@ message CreateSessionResponse {
 message CreateDownloadTaskRequest {
     string token = 1;
     DownloadType download_type = 2;
-    string url = 3;
+    string url = 3 [(validate.rules).string = {
+        uri: true,
+    }];
 }
 message CreateDownloadTaskResponse {
     DownloadTask download_task = 1;
@@ -67,8 +79,10 @@ message CreateDownloadTaskResponse {
 
 message GetDownloadTaskListRequest {
     string token = 1;
-    uint64 limit = 2;
-    uint64 offset = 3;
+    uint64 offset = 2;
+    uint64 limit = 3 [(validate.rules).uint64 = {
+        lte: 100
+    }];
 } 
 message GetDownloadTaskListResponse {
     repeated DownloadTask download_task_list = 1;
@@ -78,7 +92,9 @@ message GetDownloadTaskListResponse {
 message UpdateDownloadTaskRequest {
     string token = 1;
     uint64 download_task_id = 2;
-    string url = 3;
+    string url = 3 [(validate.rules).string = {
+        uri: true,
+    }];
 }
 message UpdateDownloadTaskResponse {
     DownloadTask download_task = 1;
