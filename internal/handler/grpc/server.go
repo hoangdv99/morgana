@@ -5,20 +5,26 @@ import (
 	"net"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/validator"
-	"github.com/hoangdv99/morgana/internal/generated/github.com/hoangdv99/morgana/morgana"
+	"github.com/hoangdv99/morgana/internal/generated/grpc/morgana"
 	"google.golang.org/grpc"
 )
 
-type Server struct {
-	Start func(ctx context.Context) error
+type Server interface {
+	Start(ctx context.Context) error
 }
 
 type server struct {
 	handler morgana.MorganaServiceServer
 }
 
+func NewServer(handler morgana.MorganaServiceServer) Server {
+	return &server{
+		handler: handler,
+	}
+}
+
 func (s *server) Start(ctx context.Context) error {
-	listener, err := net.Listen("tcp", "localhost:8080")
+	listener, err := net.Listen("tcp", "0.0.0.0:8080")
 	if err != nil {
 		return err
 	}

@@ -251,6 +251,18 @@
     }
   },
   "definitions": {
+    "morganaAccount": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "accountName": {
+          "type": "string"
+        }
+      }
+    },
     "morganaCreateAccountRequest": {
       "type": "object",
       "properties": {
@@ -265,7 +277,7 @@
     "morganaCreateAccountResponse": {
       "type": "object",
       "properties": {
-        "id": {
+        "accountId": {
           "type": "string",
           "format": "uint64"
         }
@@ -296,7 +308,7 @@
     "morganaCreateSessionRequest": {
       "type": "object",
       "properties": {
-        "username": {
+        "accountName": {
           "type": "string"
         },
         "password": {
@@ -307,6 +319,9 @@
     "morganaCreateSessionResponse": {
       "type": "object",
       "properties": {
+        "account": {
+          "$ref": "#/definitions/morganaAccount"
+        },
         "token": {
           "type": "string"
         }
@@ -341,8 +356,8 @@
           "type": "string",
           "format": "uint64"
         },
-        "user": {
-          "$ref": "#/definitions/morganaUser"
+        "account": {
+          "$ref": "#/definitions/morganaAccount"
         },
         "downloadType": {
           "$ref": "#/definitions/morganaDownloadType"
@@ -390,11 +405,11 @@
         "token": {
           "type": "string"
         },
-        "limit": {
+        "offset": {
           "type": "string",
           "format": "uint64"
         },
-        "offset": {
+        "limit": {
           "type": "string",
           "format": "uint64"
         }
@@ -436,18 +451,6 @@
       "properties": {
         "downloadTask": {
           "$ref": "#/definitions/morganaDownloadTask"
-        }
-      }
-    },
-    "morganaUser": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "username": {
-          "type": "string"
         }
       }
     },

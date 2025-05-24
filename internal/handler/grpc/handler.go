@@ -4,17 +4,25 @@ import (
 	"context"
 
 	"github.com/hoangdv99/morgana/internal/generated/grpc/morgana"
+	"github.com/hoangdv99/morgana/internal/logic"
 )
 
 type Handler struct {
 	morgana.UnimplementedMorganaServiceServer
+	accountLogic logic.Account
 }
 
-func NewHandler() morgana.MorganaServiceServer {
-	return &Handler{}
+func NewHandler(accountLogic logic.Account) morgana.MorganaServiceServer {
+	return &Handler{
+		accountLogic: accountLogic,
+	}
 }
 
-func (a *Handler) CreateAccount(context.Context, *morgana.CreateAccountRequest) (*morgana.CreateAccountResponse, error) {
+func (a Handler) CreateAccount(ctx context.Context, request *morgana.CreateAccountRequest) (*morgana.CreateAccountResponse, error) {
+	// output, err := a.accountLogic.CreateAccount(ctx, logic.CreateAccountParams{
+	// 	AccountName: request.Get(),
+	// 	Password:    request.Password,
+	// })
 	panic("unimplemented")
 }
 func (a *Handler) CreateDownloadTask(context.Context, *morgana.CreateDownloadTaskRequest) (*morgana.CreateDownloadTaskResponse, error) {
