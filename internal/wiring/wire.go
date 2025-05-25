@@ -7,15 +7,16 @@ package wiring
 
 import (
 	"github.com/google/wire"
+	"github.com/hoangdv99/morgana/internal/app"
 	"github.com/hoangdv99/morgana/internal/configs"
 	"github.com/hoangdv99/morgana/internal/dataaccess"
 	"github.com/hoangdv99/morgana/internal/handler"
-	"github.com/hoangdv99/morgana/internal/handler/grpc"
 	"github.com/hoangdv99/morgana/internal/logic"
 	"github.com/hoangdv99/morgana/internal/utils"
 )
 
 var WireSet = wire.NewSet(
+	app.WireSet,
 	configs.WireSet,
 	dataaccess.WireSet,
 	logic.WireSet,
@@ -23,7 +24,7 @@ var WireSet = wire.NewSet(
 	utils.WireSet,
 )
 
-func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, func(), error) {
+func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(), error) {
 	wire.Build(WireSet)
 
 	return nil, nil, nil

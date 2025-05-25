@@ -8,18 +8,21 @@ package wiring
 
 import (
 	"github.com/google/wire"
+	"github.com/hoangdv99/morgana/internal/app"
 	"github.com/hoangdv99/morgana/internal/configs"
 	"github.com/hoangdv99/morgana/internal/dataaccess"
+	"github.com/hoangdv99/morgana/internal/dataaccess/cache"
 	"github.com/hoangdv99/morgana/internal/dataaccess/database"
 	"github.com/hoangdv99/morgana/internal/handler"
 	"github.com/hoangdv99/morgana/internal/handler/grpc"
+	"github.com/hoangdv99/morgana/internal/handler/http"
 	"github.com/hoangdv99/morgana/internal/logic"
 	"github.com/hoangdv99/morgana/internal/utils"
 )
 
 // Injectors from wire.go:
 
-func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, func(), error) {
+func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(), error) {
 	config, err := configs.NewConfig(configFilePath)
 	if err != nil {
 		return nil, nil, err
@@ -30,27 +33,38 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 		return nil, nil, err
 	}
 	goquDatabase := database.InitializeGoquDB(db)
+	configsCache := config.Cache
 	log := config.Log
 	logger, cleanup2, err := utils.InitializeLogger(log)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	accountDataAccessor := database.NewAccountDataAccessor(goquDatabase, logger)
-	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(goquDatabase, logger)
-	auth := config.Auth
-	hash := logic.NewHash(auth)
-	tokenPublicKeyDataAccessor := database.NewTokenPublicKeyDataAccessor(goquDatabase, logger)
-	token, err := logic.NewToken(accountDataAccessor, tokenPublicKeyDataAccessor, auth, logger)
+	client, err := cache.NewClient(configsCache, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	account := logic.NewAccount(goquDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token)
+	takenAccountName := cache.NewTakenAccountName(client, logger)
+	accountDataAccessor := database.NewAccountDataAccessor(goquDatabase, logger)
+	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(goquDatabase, logger)
+	auth := config.Auth
+	hash := logic.NewHash(auth)
+	tokenPublicKey := cache.NewTokenPublicKey(client, logger)
+	tokenPublicKeyDataAccessor := database.NewTokenPublicKeyDataAccessor(goquDatabase, logger)
+	token, err := logic.NewToken(accountDataAccessor, tokenPublicKey, tokenPublicKeyDataAccessor, auth, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	account := logic.NewAccount(goquDatabase, takenAccountName, accountDataAccessor, accountPasswordDataAccessor, hash, token, logger)
 	morganaServiceServer := grpc.NewHandler(account)
 	server := grpc.NewServer(morganaServiceServer)
-	return server, func() {
+	httpServer := http.NewServer()
+	appServer := app.NewServer(server, httpServer, logger)
+	return appServer, func() {
 		cleanup2()
 		cleanup()
 	}, nil
@@ -58,4 +72,4 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 
 // wire.go:
 
-var WireSet = wire.NewSet(configs.WireSet, dataaccess.WireSet, logic.WireSet, handler.WireSet, utils.WireSet)
+var WireSet = wire.NewSet(app.WireSet, configs.WireSet, dataaccess.WireSet, logic.WireSet, handler.WireSet, utils.WireSet)
