@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 
+	"github.com/hoangdv99/morgana/internal/utils"
 	"go.uber.org/zap"
 )
 
@@ -28,9 +29,11 @@ func NewTakenAccountName(client Client, logger *zap.Logger) TakenAccountName {
 }
 
 func (t takenAccountName) Add(ctx context.Context, accountName string) error {
+	logger := utils.LoggerWithContext(ctx, t.logger).With(zap.String("account_name", accountName))
+
 	err := t.client.AddToSet(ctx, setKeyNameTakenAccountName, accountName)
 	if err != nil {
-		t.logger.With(zap.Error(err)).Error("failed to add account name to taken account names set")
+		logger.With(zap.Error(err)).Error("failed to add account name to taken account names set")
 		return err
 	}
 
@@ -38,9 +41,11 @@ func (t takenAccountName) Add(ctx context.Context, accountName string) error {
 }
 
 func (t takenAccountName) Has(ctx context.Context, accountName string) (bool, error) {
+	logger := utils.LoggerWithContext(ctx, t.logger).With(zap.String("account_name", accountName))
+
 	exists, err := t.client.IsDataInSet(ctx, setKeyNameTakenAccountName, accountName)
 	if err != nil {
-		t.logger.With(zap.Error(err)).Error("failed to check if account name exists in taken account names set")
+		logger.With(zap.Error(err)).Error("failed to check if account name exists in taken account names set")
 		return false, err
 	}
 

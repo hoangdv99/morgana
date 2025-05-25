@@ -7,6 +7,8 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	"github.com/hoangdv99/morgana/internal/utils"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -52,13 +54,13 @@ func (a accountDataAccessor) CreateAccount(ctx context.Context, account Account)
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to create account")
-		return 0, err
+		return 0, status.Errorf(codes.Internal, "failed to create account: %v", err)
 	}
 
 	lastInsertedID, err := result.LastInsertId()
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get last inserted id")
-		return 0, err
+		return 0, status.Error(codes.Internal, "failed to get last inserted id: "+err.Error())
 	}
 
 	return uint64(lastInsertedID), nil
@@ -74,7 +76,7 @@ func (a *accountDataAccessor) GetAccountByID(ctx context.Context, id uint64) (Ac
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account by id")
-		return Account{}, err
+		return Account{}, status.Errorf(codes.Internal, "failed to get account by id: %v", err)
 	}
 
 	if !found {
@@ -94,7 +96,7 @@ func (a *accountDataAccessor) GetAccountByAccountName(ctx context.Context, accou
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account by account name")
-		return Account{}, err
+		return Account{}, status.Errorf(codes.Internal, "failed to get account by account name: %v", err)
 	}
 
 	if !found {

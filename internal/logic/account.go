@@ -10,6 +10,8 @@ import (
 	"github.com/hoangdv99/morgana/internal/dataaccess/database"
 	"github.com/hoangdv99/morgana/internal/utils"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type CreateAccountParams struct {
@@ -90,6 +92,15 @@ func (a account) isAccountNameTaken(ctx context.Context, accountName string) (bo
 }
 
 func (a account) CreateAccount(ctx context.Context, params CreateAccountParams) (CreateAccountOutput, error) {
+	accountNameTaken, err := a.isAccountNameTaken(ctx, params.AccountName)
+	if err != nil {
+		return CreateAccountOutput{}, status.Errorf(codes.AlreadyExists, "account name already taken: %v", err)
+	}
+
+	if accountNameTaken {
+		return CreateAccountOutput{}, status.Error(codes.AlreadyExists, "account name is already taken")
+	}
+
 	var accountID uint64
 	txErr := a.goquDatabase.WithTx(func(td *goqu.TxDatabase) error {
 		accountNameTaken, err := a.isAccountNameTaken(ctx, params.AccountName)
@@ -135,7 +146,7 @@ func (a account) CreateAccount(ctx context.Context, params CreateAccountParams) 
 	}, nil
 }
 
-func (a *account) CreateSession(ctx context.Context, params CreateSessionParams) (token string, err error) {
+func (a *account) CreateSession(ctx context.Context, params CreateSessionParams) (string, error) {
 	existingAccount, err := a.accountDataAccessor.GetAccountByAccountName(ctx, params.AccountName)
 	if err != nil {
 		return "", err
@@ -152,8 +163,13 @@ func (a *account) CreateSession(ctx context.Context, params CreateSessionParams)
 	}
 
 	if !isHashEqual {
-		return "", errors.New("incorrect password")
+		return "", status.Error(codes.Unauthenticated, "incorrect password")
 	}
 
-	return "", nil
+	token, _, err := a.tokenLogic.GetToken(ctx, existingAccount.ID)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }

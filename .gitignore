@@ -19,3 +19,11 @@
 
 # Go workspace file
 go.work
+
+
+# Built binary
+build/
+__debug_bin*
+
+# Docker-compose test data folder
+mysql_data/

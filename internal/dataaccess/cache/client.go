@@ -9,6 +9,8 @@ import (
 	"github.com/hoangdv99/morgana/internal/configs"
 	"github.com/hoangdv99/morgana/internal/utils"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -30,7 +32,7 @@ type client struct {
 func NewClient(
 	cacheConfig configs.Cache,
 	logger *zap.Logger,
-) (Client, error) {
+) Client {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     cacheConfig.Address,
 		Username: cacheConfig.Username,
@@ -40,7 +42,7 @@ func NewClient(
 	return &client{
 		redisClient: redisClient,
 		logger:      logger,
-	}, nil
+	}
 }
 
 func (c client) AddToSet(ctx context.Context, key string, data ...any) error {
@@ -64,7 +66,7 @@ func (c client) Get(ctx context.Context, key string) (any, error) {
 			return nil, ErrCacheMiss
 		}
 		logger.With(zap.Error(err)).Error("failed to get data from cache")
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to get data from cache: %+v", err)
 	}
 
 	return data, nil
@@ -93,7 +95,7 @@ func (c client) Set(ctx context.Context, key string, data any, ttl time.Duration
 	err := c.redisClient.Set(ctx, key, data, ttl).Err()
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to set data in cache")
-		return err
+		return status.Errorf(codes.Internal, "failed to set data in cache: %v", err)
 	}
 
 	return nil

@@ -32,20 +32,16 @@ func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(
 	if err != nil {
 		return nil, nil, err
 	}
-	goquDatabase := database.InitializeGoquDB(db)
-	configsCache := config.Cache
 	log := config.Log
 	logger, cleanup2, err := utils.InitializeLogger(log)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	client, err := cache.NewClient(configsCache, logger)
-	if err != nil {
-		cleanup2()
-		cleanup()
-		return nil, nil, err
-	}
+	migrator := database.NewMigrator(db, logger)
+	goquDatabase := database.InitializeGoquDB(db)
+	configsCache := config.Cache
+	client := cache.NewClient(configsCache, logger)
 	takenAccountName := cache.NewTakenAccountName(client, logger)
 	accountDataAccessor := database.NewAccountDataAccessor(goquDatabase, logger)
 	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(goquDatabase, logger)
@@ -61,9 +57,11 @@ func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(
 	}
 	account := logic.NewAccount(goquDatabase, takenAccountName, accountDataAccessor, accountPasswordDataAccessor, hash, token, logger)
 	morganaServiceServer := grpc.NewHandler(account)
-	server := grpc.NewServer(morganaServiceServer)
-	httpServer := http.NewServer()
-	appServer := app.NewServer(server, httpServer, logger)
+	configsGRPC := config.GRPC
+	server := grpc.NewServer(morganaServiceServer, configsGRPC, logger)
+	configsHTTP := config.HTTP
+	httpServer := http.NewServer(configsGRPC, configsHTTP, logger)
+	appServer := app.NewServer(migrator, server, httpServer, logger)
 	return appServer, func() {
 		cleanup2()
 		cleanup()

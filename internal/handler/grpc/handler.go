@@ -55,6 +55,6 @@ func (a *Handler) UpdateDownloadTask(context.Context, *morgana.UpdateDownloadTas
 }
 
 // mustEmbedUnimplementedGoLoadServiceServer implements morgana.GoLoadServiceServer.
-func (a *Handler) mustEmbedUnimplementedGoLoadServiceServer() {
-	panic("unimplemented")
-}
+// func (a *Handler) mustEmbedUnimplementedGoLoadServiceServer() {
+// 	panic("unimplemented")
+// }

@@ -38,11 +38,12 @@ func (c tokenPublicKey) Get(ctx context.Context, id uint64) ([]byte, error) {
 	cacheKey := c.getTokenPublicKeyCacheKey(id)
 	cacheEntry, err := c.client.Get(ctx, cacheKey)
 	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get token public key cache")
 		return nil, err
 	}
 
 	if cacheEntry == nil {
-		return nil, nil
+		return nil, ErrCacheMiss
 	}
 
 	publicKey, ok := cacheEntry.([]byte)
@@ -55,6 +56,14 @@ func (c tokenPublicKey) Get(ctx context.Context, id uint64) ([]byte, error) {
 }
 
 func (c tokenPublicKey) Set(ctx context.Context, id uint64, bytes []byte) error {
+	logger := utils.LoggerWithContext(ctx, c.logger).With(zap.Uint64("id", id))
+
 	cacheKey := c.getTokenPublicKeyCacheKey(id)
-	return c.client.Set(ctx, cacheKey, bytes, 0)
+	err := c.client.Set(ctx, cacheKey, bytes, 0)
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to set token public key cache")
+		return err
+	}
+
+	return nil
 }

@@ -16,6 +16,8 @@ import (
 	"github.com/hoangdv99/morgana/internal/dataaccess/database"
 	"github.com/hoangdv99/morgana/internal/utils"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -23,7 +25,14 @@ const (
 )
 
 var (
-	errTokenPublicKeyNotFound = errors.New("token public key not found")
+	errUnexpectedSigningMethod = status.Error(codes.Unauthenticated, "unexpected signing method")
+	errCannotGetTokensClaims   = status.Error(codes.Unauthenticated, "cannot get token's claims")
+	errCannotGetTokensKidClaim = status.Error(codes.Unauthenticated, "cannot get token's kid claim")
+	errCannotGetTokensSubClaim = status.Error(codes.Unauthenticated, "cannot get token's sub claim")
+	errCannotGetTokensExpClaim = status.Error(codes.Unauthenticated, "cannot get token's exp claim")
+	errTokenPublicKeyNotFound  = status.Error(codes.Unauthenticated, "token public key not found")
+	errInvalidToken            = status.Error(codes.Unauthenticated, "invalid token")
+	errFailedToSignToken       = status.Error(codes.Internal, "failed to sign token")
 )
 
 type Token interface {
@@ -148,19 +157,19 @@ func (t token) GetAccountIDAndExpireTime(ctx context.Context, token string) (uin
 	parsedToken, err := jwt.Parse(token, func(parsedToken *jwt.Token) (interface{}, error) {
 		if _, ok := parsedToken.Method.(*jwt.SigningMethodRSA); !ok {
 			logger.Error("unexpected signing method", zap.String("method", parsedToken.Header["alg"].(string)))
-			return nil, errors.New("unexpected signing method")
+			return nil, errUnexpectedSigningMethod
 		}
 
 		claims, ok := parsedToken.Claims.(jwt.MapClaims)
 		if !ok {
 			logger.Error("failed to parse token claims")
-			return nil, errors.New("cannot get token's claims")
+			return nil, errCannotGetTokensClaims
 		}
 
 		tokenPublicKeyID, ok := claims["kid"].(uint64)
 		if !ok {
 			logger.Error("failed to get token public key id from claims")
-			return nil, errors.New("cannot get token's public key id")
+			return nil, errCannotGetTokensKidClaim
 		}
 
 		return t.getJWTPublicKey(ctx, tokenPublicKeyID)
@@ -173,25 +182,25 @@ func (t token) GetAccountIDAndExpireTime(ctx context.Context, token string) (uin
 
 	if !parsedToken.Valid {
 		logger.Error("invalid token")
-		return 0, time.Time{}, errors.New("invalid token")
+		return 0, time.Time{}, errInvalidToken
 	}
 
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok {
 		logger.Error("cannot get token's claims")
-		return 0, time.Time{}, errors.New("cannot get token's claims")
+		return 0, time.Time{}, errCannotGetTokensClaims
 	}
 
 	accountID, ok := claims["sub"].(float64)
 	if !ok {
 		logger.Error("cannot get token's sub claim")
-		return 0, time.Time{}, errors.New("cannot get token's sub claim")
+		return 0, time.Time{}, errCannotGetTokensSubClaim
 	}
 
 	expireTimeUnix, ok := claims["exp"].(float64)
 	if !ok {
 		logger.Error("cannot get token's exp claim")
-		return 0, time.Time{}, errors.New("cannot get token's exp claim")
+		return 0, time.Time{}, errCannotGetTokensExpClaim
 	}
 
 	return uint64(accountID), time.Unix(int64(expireTimeUnix), 0), nil
@@ -210,7 +219,7 @@ func (t token) GetToken(ctx context.Context, accountID uint64) (string, time.Tim
 	tokenString, err := token.SignedString(t.privateKey)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to sign token")
-		return "", time.Time{}, err
+		return "", time.Time{}, errFailedToSignToken
 	}
 
 	return tokenString, expireTime, nil
