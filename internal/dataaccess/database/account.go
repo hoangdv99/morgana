@@ -11,8 +11,13 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+var (
+	TabNameAccounts = goqu.T("accounts")
+
+	ErrAccountNotFound = status.Error(codes.NotFound, "account not found")
+)
+
 const (
-	TabNameAccount             = "accounts"
 	ColNameAccountsID          = "id"
 	ColNameAccountsAccountName = "account_name"
 )
@@ -45,7 +50,7 @@ func (a accountDataAccessor) CreateAccount(ctx context.Context, account Account)
 	logger := utils.LoggerWithContext(ctx, a.logger)
 
 	result, err := a.database.
-		Insert(TabNameAccount).
+		Insert(TabNameAccounts).
 		Rows(goqu.Record{
 			ColNameAccountsAccountName: account.AccountName,
 		}).
@@ -70,7 +75,7 @@ func (a *accountDataAccessor) GetAccountByID(ctx context.Context, id uint64) (Ac
 	logger := utils.LoggerWithContext(ctx, a.logger)
 	account := Account{}
 	found, err := a.database.
-		From(TabNameAccount).
+		From(TabNameAccounts).
 		Where(goqu.Ex{ColNameAccountsID: id}).
 		ScanStructContext(ctx, &account)
 
@@ -90,7 +95,7 @@ func (a *accountDataAccessor) GetAccountByAccountName(ctx context.Context, accou
 	logger := utils.LoggerWithContext(ctx, a.logger)
 	account := Account{}
 	found, err := a.database.
-		From(TabNameAccount).
+		From(TabNameAccounts).
 		Where(goqu.Ex{ColNameAccountsAccountName: accountName}).
 		ScanStructContext(ctx, &account)
 

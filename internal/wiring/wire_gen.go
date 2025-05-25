@@ -28,17 +28,16 @@ func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(
 		return nil, nil, err
 	}
 	configsDatabase := config.Database
-	db, cleanup, err := database.InitializeDB(configsDatabase)
+	log := config.Log
+	logger, cleanup, err := utils.InitializeLogger(log)
 	if err != nil {
 		return nil, nil, err
 	}
-	log := config.Log
-	logger, cleanup2, err := utils.InitializeLogger(log)
+	db, cleanup2, err := database.InitializeAndMigrateUpDB(configsDatabase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
 	}
-	migrator := database.NewMigrator(db, logger)
 	goquDatabase := database.InitializeGoquDB(db)
 	configsCache := config.Cache
 	client := cache.NewClient(configsCache, logger)
@@ -61,7 +60,7 @@ func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(
 	server := grpc.NewServer(morganaServiceServer, configsGRPC, logger)
 	configsHTTP := config.HTTP
 	httpServer := http.NewServer(configsGRPC, configsHTTP, logger)
-	appServer := app.NewServer(migrator, server, httpServer, logger)
+	appServer := app.NewServer(server, httpServer, logger)
 	return appServer, func() {
 		cleanup2()
 		cleanup()

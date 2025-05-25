@@ -3,7 +3,7 @@ package database
 import "github.com/google/wire"
 
 var WireSet = wire.NewSet(
-	InitializeDB,
+	InitializeAndMigrateUpDB,
 	InitializeGoquDB,
 	NewMigrator,
 	NewAccountDataAccessor,
