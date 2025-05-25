@@ -8,7 +8,7 @@ type downloadTaskDataAccessor struct {
 	database Database
 }
 
-func NewDownloadTaskAccessor(database *goqu.Database) DownloadTaskDataAccessor {
+func NewDownloadTaskDataAccessor(database *goqu.Database) DownloadTaskDataAccessor {
 	return &downloadTaskDataAccessor{
 		database: database,
 	}

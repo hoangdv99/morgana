@@ -12,6 +12,7 @@ import (
 	"github.com/hoangdv99/morgana/internal/handler"
 	"github.com/hoangdv99/morgana/internal/handler/grpc"
 	"github.com/hoangdv99/morgana/internal/logic"
+	"github.com/hoangdv99/morgana/internal/utils"
 )
 
 var WireSet = wire.NewSet(
@@ -19,6 +20,7 @@ var WireSet = wire.NewSet(
 	dataaccess.WireSet,
 	logic.WireSet,
 	handler.WireSet,
+	utils.WireSet,
 )
 
 func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, func(), error) {

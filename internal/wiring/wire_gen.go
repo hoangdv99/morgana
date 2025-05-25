@@ -14,6 +14,7 @@ import (
 	"github.com/hoangdv99/morgana/internal/handler"
 	"github.com/hoangdv99/morgana/internal/handler/grpc"
 	"github.com/hoangdv99/morgana/internal/logic"
+	"github.com/hoangdv99/morgana/internal/utils"
 )
 
 // Injectors from wire.go:
@@ -29,18 +30,32 @@ func InitializeGRPCServer(configFilePath configs.ConfigFilePath) (grpc.Server, f
 		return nil, nil, err
 	}
 	goquDatabase := database.InitializeGoquDB(db)
-	accountDataAccessor := database.NewAccountAccessor(goquDatabase)
-	accountPasswordDataAccessor := database.NewAccountPasswordAccessor(goquDatabase)
-	account := config.Account
-	hash := logic.NewHash(account)
-	logicAccount := logic.NewAccount(goquDatabase, accountDataAccessor, accountPasswordDataAccessor, hash)
-	morganaServiceServer := grpc.NewHandler(logicAccount)
+	log := config.Log
+	logger, cleanup2, err := utils.InitializeLogger(log)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	accountDataAccessor := database.NewAccountDataAccessor(goquDatabase, logger)
+	accountPasswordDataAccessor := database.NewAccountPasswordDataAccessor(goquDatabase, logger)
+	auth := config.Auth
+	hash := logic.NewHash(auth)
+	tokenPublicKeyDataAccessor := database.NewTokenPublicKeyDataAccessor(goquDatabase, logger)
+	token, err := logic.NewToken(accountDataAccessor, tokenPublicKeyDataAccessor, auth, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	account := logic.NewAccount(goquDatabase, accountDataAccessor, accountPasswordDataAccessor, hash, token)
+	morganaServiceServer := grpc.NewHandler(account)
 	server := grpc.NewServer(morganaServiceServer)
 	return server, func() {
+		cleanup2()
 		cleanup()
 	}, nil
 }
 
 // wire.go:
 
-var WireSet = wire.NewSet(configs.WireSet, dataaccess.WireSet, logic.WireSet, handler.WireSet)
+var WireSet = wire.NewSet(configs.WireSet, dataaccess.WireSet, logic.WireSet, handler.WireSet, utils.WireSet)

@@ -5,7 +5,8 @@ import "github.com/google/wire"
 var WireSet = wire.NewSet(
 	InitializeDB,
 	InitializeGoquDB,
-	NewAccountAccessor,
-	NewAccountPasswordAccessor,
-	NewDownloadTaskAccessor,
+	NewAccountDataAccessor,
+	NewAccountPasswordDataAccessor,
+	NewDownloadTaskDataAccessor,
+	NewTokenPublicKeyDataAccessor,
 )
