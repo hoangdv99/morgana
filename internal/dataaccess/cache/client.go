@@ -3,7 +3,11 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
+
+	"slices"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/hoangdv99/morgana/internal/configs"
@@ -24,28 +28,43 @@ type Client interface {
 	IsDataInSet(ctx context.Context, key string, data any) (bool, error)
 }
 
-type client struct {
+type redisClient struct {
 	redisClient *redis.Client
 	logger      *zap.Logger
+}
+
+type inMemoryClient struct {
+	cache      map[string]any
+	cacheMutex *sync.Mutex
+	logger     *zap.Logger
 }
 
 func NewClient(
 	cacheConfig configs.Cache,
 	logger *zap.Logger,
-) Client {
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cacheConfig.Address,
-		Username: cacheConfig.Username,
-		Password: cacheConfig.Password,
-	})
-
-	return &client{
-		redisClient: redisClient,
-		logger:      logger,
+) (Client, error) {
+	switch cacheConfig.Type {
+	case configs.CacheTypeInMemory:
+		return NewInMemoryClient(cacheConfig, logger), nil
+	case configs.CacheTypeRedis:
+		return NewRedisClient(cacheConfig, logger), nil
+	default:
+		return nil, fmt.Errorf("unsupported cache type: %s", cacheConfig.Type)
 	}
 }
 
-func (c client) AddToSet(ctx context.Context, key string, data ...any) error {
+func NewRedisClient(cacheConfig configs.Cache, logger *zap.Logger) Client {
+	return &redisClient{
+		redisClient: redis.NewClient(&redis.Options{
+			Addr:     cacheConfig.Address,
+			Username: cacheConfig.Username,
+			Password: cacheConfig.Password,
+		}),
+		logger: logger,
+	}
+}
+
+func (c redisClient) AddToSet(ctx context.Context, key string, data ...any) error {
 	logger := utils.LoggerWithContext(ctx, c.logger).
 		With(zap.String("key", key)).
 		With(zap.Any("data", data))
@@ -58,7 +77,7 @@ func (c client) AddToSet(ctx context.Context, key string, data ...any) error {
 	return nil
 }
 
-func (c client) Get(ctx context.Context, key string) (any, error) {
+func (c redisClient) Get(ctx context.Context, key string) (any, error) {
 	logger := utils.LoggerWithContext(ctx, c.logger).With(zap.String("key", key))
 	data, err := c.redisClient.Get(ctx, key).Result()
 	if err != nil {
@@ -72,7 +91,7 @@ func (c client) Get(ctx context.Context, key string) (any, error) {
 	return data, nil
 }
 
-func (c client) IsDataInSet(ctx context.Context, key string, data any) (bool, error) {
+func (c redisClient) IsDataInSet(ctx context.Context, key string, data any) (bool, error) {
 	logger := utils.LoggerWithContext(ctx, c.logger).
 		With(zap.String("key", key)).
 		With(zap.Any("data", data))
@@ -86,7 +105,7 @@ func (c client) IsDataInSet(ctx context.Context, key string, data any) (bool, er
 	return result, nil
 }
 
-func (c client) Set(ctx context.Context, key string, data any, ttl time.Duration) error {
+func (c redisClient) Set(ctx context.Context, key string, data any, ttl time.Duration) error {
 	logger := utils.LoggerWithContext(ctx, c.logger).
 		With(zap.String("key", key)).
 		With(zap.Any("data", data)).
@@ -99,4 +118,61 @@ func (c client) Set(ctx context.Context, key string, data any, ttl time.Duration
 	}
 
 	return nil
+}
+
+func NewInMemoryClient(cacheConfig configs.Cache, logger *zap.Logger) Client {
+	return &inMemoryClient{
+		cache:      make(map[string]any),
+		cacheMutex: new(sync.Mutex),
+		logger:     logger,
+	}
+}
+
+func (c inMemoryClient) AddToSet(ctx context.Context, key string, data ...any) error {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	set := c.getSet(key)
+	set = append(set, data...)
+	c.cache[key] = set
+
+	return nil
+}
+
+func (c inMemoryClient) Get(ctx context.Context, key string) (any, error) {
+	data, ok := c.cache[key]
+	if !ok {
+		return nil, ErrCacheMiss
+	}
+
+	return data, nil
+}
+
+func (c inMemoryClient) IsDataInSet(ctx context.Context, key string, data any) (bool, error) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	set := c.getSet(key)
+	if slices.Contains(set, data) {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (c inMemoryClient) Set(ctx context.Context, key string, data any, ttl time.Duration) error {
+	c.cache[key] = data
+	return nil
+}
+
+func (c inMemoryClient) getSet(key string) []any {
+	setValue, ok := c.cache[key]
+	if !ok {
+		return make([]any, 0)
+	}
+	set, ok := setValue.([]any)
+	if !ok {
+		return make([]any, 0)
+	}
+	return set
 }

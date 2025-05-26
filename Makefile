@@ -79,3 +79,11 @@ run-server:
 .PHONY: lint
 lint:
 	golangci-lint run ./... 
+
+.PHONY: docker-compose-dev-up
+docker-compose-dev-up:
+	docker-compose -f deployments/docker-compose.dev.yaml up -d
+
+.PHONY: docker-compose-dev-down
+docker-compose-dev-down:
+	docker-compose -f deployments/docker-compose.dev.yaml down
