@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/hoangdv99/morgana/internal/utils"
@@ -23,7 +22,7 @@ const (
 )
 
 type Account struct {
-	ID          uint64 `db:"id"`
+	ID          uint64 `db:"id" goqu:"skipinsert,skipupdate"`
 	AccountName string `db:"account_name"`
 }
 
@@ -47,7 +46,7 @@ func NewAccountDataAccessor(database *goqu.Database, logger *zap.Logger) Account
 }
 
 func (a accountDataAccessor) CreateAccount(ctx context.Context, account Account) (uint64, error) {
-	logger := utils.LoggerWithContext(ctx, a.logger)
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.Any("account", account))
 
 	result, err := a.database.
 		Insert(TabNameAccounts).
@@ -86,13 +85,13 @@ func (a *accountDataAccessor) GetAccountByID(ctx context.Context, id uint64) (Ac
 
 	if !found {
 		logger.Warn("cannot find account by id")
-		return Account{}, sql.ErrNoRows
+		return Account{}, status.Error(codes.NotFound, "account not found")
 	}
 
 	return account, nil
 }
 func (a *accountDataAccessor) GetAccountByAccountName(ctx context.Context, accountName string) (Account, error) {
-	logger := utils.LoggerWithContext(ctx, a.logger)
+	logger := utils.LoggerWithContext(ctx, a.logger).With(zap.String("account_name", accountName))
 	account := Account{}
 	found, err := a.database.
 		From(TabNameAccounts).
@@ -106,7 +105,7 @@ func (a *accountDataAccessor) GetAccountByAccountName(ctx context.Context, accou
 
 	if !found {
 		logger.Warn("cannot find account by account name")
-		return Account{}, sql.ErrNoRows
+		return Account{}, status.Error(codes.NotFound, "account not found")
 	}
 
 	return account, nil
@@ -115,5 +114,6 @@ func (a *accountDataAccessor) GetAccountByAccountName(ctx context.Context, accou
 func (a accountDataAccessor) WithDatabase(database Database) AccountDataAccessor {
 	return &accountDataAccessor{
 		database: database,
+		logger:   a.logger,
 	}
 }

@@ -1552,6 +1552,8 @@ func (m *DeleteDownloadTaskRequest) validate(all bool) error {
 
 	// no validation rules for Token
 
+	// no validation rules for DownloadTaskId
+
 	if len(errors) > 0 {
 		return DeleteDownloadTaskRequestMultiError(errors)
 	}

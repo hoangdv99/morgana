@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/hoangdv99/morgana/internal/dataaccess/database"
 	"github.com/hoangdv99/morgana/internal/utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -16,7 +15,7 @@ const (
 )
 
 type DownloadTaskCreated struct {
-	DownloadTask database.DownloadTask
+	ID uint64 `json:"id"`
 }
 
 type DownloadTaskCreatedProducer interface {

@@ -13,6 +13,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/rubenv/sql-migrate v1.8.0
+	github.com/samber/lo v1.50.0
 	github.com/spf13/cobra v1.9.1
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.38.0

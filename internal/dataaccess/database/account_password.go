@@ -21,7 +21,7 @@ const (
 )
 
 type AccountPassword struct {
-	AccountID uint64 `db:"account_id"`
+	AccountID uint64 `db:"account_id" goqu:"skipinsert,skipupdate"`
 	Hash      string `db:"hash"`
 }
 
@@ -106,5 +106,6 @@ func (a accountPasswordDataAccessor) UpdateAccountPassword(ctx context.Context, 
 func (a accountPasswordDataAccessor) WithDatabase(database Database) AccountPasswordDataAccessor {
 	return &accountPasswordDataAccessor{
 		database: database,
+		logger:   a.logger,
 	}
 }

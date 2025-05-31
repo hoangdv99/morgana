@@ -22,7 +22,7 @@ const (
 
 type TokenPublicKey struct {
 	ID        uint64 `db:"id"`
-	PublicKey string `db:"public_key"`
+	PublicKey string `db:"public_key" goqu:"skipinsert,skipupdate"`
 }
 
 type TokenPublicKeyDataAccessor interface {

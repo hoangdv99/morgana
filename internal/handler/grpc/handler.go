@@ -38,12 +38,12 @@ func (a Handler) CreateDownloadTask(ctx context.Context, request *morgana.Create
 	}
 
 	return &morgana.CreateDownloadTaskResponse{
-		DownloadTask: &output.DownloadTask,
+		DownloadTask: output.DownloadTask,
 	}, nil
 }
 
 func (a Handler) CreateSession(ctx context.Context, request *morgana.CreateSessionRequest) (*morgana.CreateSessionResponse, error) {
-	token, err := a.accountLogic.CreateSession(ctx, logic.CreateSessionParams{
+	output, err := a.accountLogic.CreateSession(ctx, logic.CreateSessionParams{
 		AccountName: request.GetAccountName(),
 		Password:    request.GetPassword(),
 	})
@@ -51,13 +51,21 @@ func (a Handler) CreateSession(ctx context.Context, request *morgana.CreateSessi
 		return nil, err
 	}
 	return &morgana.CreateSessionResponse{
-		Token: token,
+		Account: output.Account,
+		Token:   output.Token,
 	}, nil
 }
 
-// DeleteDownloadTask implements morgana.GoLoadServiceServer.
-func (a *Handler) DeleteDownloadTask(context.Context, *morgana.DeleteDownloadTaskRequest) (*morgana.DeleteDownloadTaskResponse, error) {
-	panic("unimplemented")
+func (a Handler) DeleteDownloadTask(ctx context.Context, request *morgana.DeleteDownloadTaskRequest) (*morgana.DeleteDownloadTaskResponse, error) {
+	err := a.downloadTaskLogic.DeleteDownloadTask(ctx, logic.DeleteDownloadTaskParams{
+		Token:          request.GetToken(),
+		DownloadTaskID: request.GetDownloadTaskId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &morgana.DeleteDownloadTaskResponse{}, nil
 }
 
 // GetDownloadTaskFile implements morgana.GoLoadServiceServer.
@@ -65,14 +73,35 @@ func (a *Handler) GetDownloadTaskFile(*morgana.GetDownloadTaskFileRequest, morga
 	panic("unimplemented")
 }
 
-// GetDownloadTaskList implements morgana.GoLoadServiceServer.
-func (a *Handler) GetDownloadTaskList(context.Context, *morgana.GetDownloadTaskListRequest) (*morgana.GetDownloadTaskListResponse, error) {
-	panic("unimplemented")
+func (a Handler) GetDownloadTaskList(ctx context.Context, request *morgana.GetDownloadTaskListRequest) (*morgana.GetDownloadTaskListResponse, error) {
+	output, err := a.downloadTaskLogic.GetDownloadTaskList(ctx, logic.GetDownloadTaskListParams{
+		Token:  request.GetToken(),
+		Offset: request.GetOffset(),
+		Limit:  request.GetLimit(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &morgana.GetDownloadTaskListResponse{
+		DownloadTaskList:      output.DownloadTaskList,
+		ToalDownloadTaskCount: output.TotalDownloadTaskCount,
+	}, nil
 }
 
-// UpdateDownloadTask implements morgana.GoLoadServiceServer.
-func (a *Handler) UpdateDownloadTask(context.Context, *morgana.UpdateDownloadTaskRequest) (*morgana.UpdateDownloadTaskResponse, error) {
-	panic("unimplemented")
+func (a Handler) UpdateDownloadTask(ctx context.Context, request *morgana.UpdateDownloadTaskRequest) (*morgana.UpdateDownloadTaskResponse, error) {
+	output, err := a.downloadTaskLogic.UpdateDownloadTask(ctx, logic.UpdateDownloadTaskParams{
+		Token:          request.GetToken(),
+		DownloadTaskID: request.GetDownloadTaskId(),
+		URL:            request.GetUrl(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &morgana.UpdateDownloadTaskResponse{
+		DownloadTask: output.DownloadTask,
+	}, nil
 }
 
 // mustEmbedUnimplementedGoLoadServiceServer implements morgana.GoLoadServiceServer.

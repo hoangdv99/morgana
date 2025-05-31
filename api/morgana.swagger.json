@@ -332,6 +332,10 @@
       "properties": {
         "token": {
           "type": "string"
+        },
+        "downloadTaskId": {
+          "type": "string",
+          "format": "uint64"
         }
       }
     },

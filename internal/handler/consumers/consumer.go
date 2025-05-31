@@ -3,11 +3,9 @@ package consumers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/hoangdv99/morgana/internal/dataaccess/mq/consumer"
 	"github.com/hoangdv99/morgana/internal/dataaccess/mq/producer"
-	"github.com/hoangdv99/morgana/internal/utils"
 	"go.uber.org/zap"
 )
 
@@ -34,9 +32,7 @@ func NewRoot(
 }
 
 func (r root) Start(ctx context.Context) error {
-	logger := utils.LoggerWithContext(ctx, r.logger)
-
-	err := r.mqConsumer.RegisterHandler(
+	r.mqConsumer.RegisterHandler(
 		producer.MessageQueueDownloadTaskCreated,
 		func(ctx context.Context, queueName string, payload []byte) error {
 			var event producer.DownloadTaskCreated
@@ -47,10 +43,6 @@ func (r root) Start(ctx context.Context) error {
 			return r.downloadTaskCreatedHandler.Handle(ctx, event)
 		},
 	)
-	if err != nil {
-		logger.With(zap.Error(err)).Error("failed to register handler for DownloadTaskCreated")
-		return fmt.Errorf("failed to register handler for DownloadTaskCreated: %w", err)
-	}
 
 	return r.mqConsumer.Start(ctx)
 }
