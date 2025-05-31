@@ -9,12 +9,14 @@ import (
 
 type Handler struct {
 	morgana.UnimplementedMorganaServiceServer
-	accountLogic logic.Account
+	accountLogic      logic.Account
+	downloadTaskLogic logic.DownloadTask
 }
 
-func NewHandler(accountLogic logic.Account) morgana.MorganaServiceServer {
+func NewHandler(accountLogic logic.Account, downloadTaskLogic logic.DownloadTask) morgana.MorganaServiceServer {
 	return &Handler{
-		accountLogic: accountLogic,
+		accountLogic:      accountLogic,
+		downloadTaskLogic: downloadTaskLogic,
 	}
 }
 
@@ -25,13 +27,32 @@ func (a Handler) CreateAccount(ctx context.Context, request *morgana.CreateAccou
 	// })
 	panic("unimplemented")
 }
-func (a *Handler) CreateDownloadTask(context.Context, *morgana.CreateDownloadTaskRequest) (*morgana.CreateDownloadTaskResponse, error) {
-	panic("unimplemented")
+func (a Handler) CreateDownloadTask(ctx context.Context, request *morgana.CreateDownloadTaskRequest) (*morgana.CreateDownloadTaskResponse, error) {
+	output, err := a.downloadTaskLogic.CreateDownloadTask(ctx, logic.CreateDownloadTaskParams{
+		Token:        request.GetToken(),
+		DownloadType: request.GetDownloadType(),
+		URL:          request.GetUrl(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &morgana.CreateDownloadTaskResponse{
+		DownloadTask: &output.DownloadTask,
+	}, nil
 }
 
-// CreateSession implements morgana.GoLoadServiceServer.
-func (a *Handler) CreateSession(context.Context, *morgana.CreateSessionRequest) (*morgana.CreateSessionResponse, error) {
-	panic("unimplemented")
+func (a Handler) CreateSession(ctx context.Context, request *morgana.CreateSessionRequest) (*morgana.CreateSessionResponse, error) {
+	token, err := a.accountLogic.CreateSession(ctx, logic.CreateSessionParams{
+		AccountName: request.GetAccountName(),
+		Password:    request.GetPassword(),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &morgana.CreateSessionResponse{
+		Token: token,
+	}, nil
 }
 
 // DeleteDownloadTask implements morgana.GoLoadServiceServer.

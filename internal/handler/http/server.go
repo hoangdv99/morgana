@@ -39,10 +39,10 @@ func NewServer(
 func (s *server) Start(ctx context.Context) error {
 	logger := utils.LoggerWithContext(ctx, s.logger)
 
-	mux := runtime.NewServeMux()
+	grpcMux := runtime.NewServeMux()
 	if err := morgana.RegisterMorganaServiceHandlerFromEndpoint(
 		ctx,
-		mux,
+		grpcMux,
 		s.grpcConfig.Address,
 		[]grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -52,7 +52,7 @@ func (s *server) Start(ctx context.Context) error {
 
 	httpServer := http.Server{
 		Addr:              s.httpConfig.Address,
-		Handler:           mux,
+		Handler:           grpcMux,
 		ReadHeaderTimeout: time.Minute,
 	}
 
