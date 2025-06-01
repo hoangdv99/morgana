@@ -2,7 +2,6 @@ package logic
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"github.com/doug-martin/goqu/v9"
@@ -76,13 +75,13 @@ func (a account) isAccountNameTaken(ctx context.Context, accountName string) (bo
 	accountNameTaken, err := a.takenAccountNameCache.Has(ctx, accountName)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to check if account name is taken in cache")
-	} else {
-		return accountNameTaken, nil
+	} else if accountNameTaken {
+		return true, nil
 	}
 
 	_, err = a.accountDataAccessor.GetAccountByAccountName(ctx, accountName)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, database.ErrAccountNotFound) {
 			return false, nil
 		}
 		return false, err
@@ -100,7 +99,7 @@ func (a account) isAccountNameTaken(ctx context.Context, accountName string) (bo
 func (a account) CreateAccount(ctx context.Context, params CreateAccountParams) (CreateAccountOutput, error) {
 	accountNameTaken, err := a.isAccountNameTaken(ctx, params.AccountName)
 	if err != nil {
-		return CreateAccountOutput{}, status.Errorf(codes.AlreadyExists, "account name already taken: %v", err)
+		return CreateAccountOutput{}, status.Error(codes.AlreadyExists, "account name already taken")
 	}
 
 	if accountNameTaken {

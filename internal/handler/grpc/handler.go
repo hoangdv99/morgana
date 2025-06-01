@@ -5,6 +5,13 @@ import (
 
 	"github.com/hoangdv99/morgana/internal/generated/grpc/morgana"
 	"github.com/hoangdv99/morgana/internal/logic"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+)
+
+const (
+	//nolint:gosec // This is just to specify the metadata name
+	AuthTokenMetadataName = "MORGANA_AUTH"
 )
 
 type Handler struct {
@@ -21,15 +28,36 @@ func NewHandler(accountLogic logic.Account, downloadTaskLogic logic.DownloadTask
 }
 
 func (a Handler) CreateAccount(ctx context.Context, request *morgana.CreateAccountRequest) (*morgana.CreateAccountResponse, error) {
-	// output, err := a.accountLogic.CreateAccount(ctx, logic.CreateAccountParams{
-	// 	AccountName: request.Get(),
-	// 	Password:    request.Password,
-	// })
-	panic("unimplemented")
+	output, err := a.accountLogic.CreateAccount(ctx, logic.CreateAccountParams{
+		AccountName: request.GetAccountName(),
+		Password:    request.GetPassword(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &morgana.CreateAccountResponse{
+		AccountId: output.ID,
+	}, nil
 }
+
+func (a Handler) getAuthTokenMetadata(ctx context.Context) string {
+	metadata, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return ""
+	}
+
+	metadataValues := metadata.Get(AuthTokenMetadataName)
+	if len(metadataValues) == 0 {
+		return ""
+	}
+
+	return metadataValues[0]
+}
+
 func (a Handler) CreateDownloadTask(ctx context.Context, request *morgana.CreateDownloadTaskRequest) (*morgana.CreateDownloadTaskResponse, error) {
 	output, err := a.downloadTaskLogic.CreateDownloadTask(ctx, logic.CreateDownloadTaskParams{
-		Token:        request.GetToken(),
+		Token:        a.getAuthTokenMetadata(ctx),
 		DownloadType: request.GetDownloadType(),
 		URL:          request.GetUrl(),
 	})
@@ -50,15 +78,20 @@ func (a Handler) CreateSession(ctx context.Context, request *morgana.CreateSessi
 	if err != nil {
 		return nil, err
 	}
+
+	err = grpc.SetHeader(ctx, metadata.Pairs(AuthTokenMetadataName, output.Token))
+	if err != nil {
+		return nil, err
+	}
+
 	return &morgana.CreateSessionResponse{
 		Account: output.Account,
-		Token:   output.Token,
 	}, nil
 }
 
 func (a Handler) DeleteDownloadTask(ctx context.Context, request *morgana.DeleteDownloadTaskRequest) (*morgana.DeleteDownloadTaskResponse, error) {
 	err := a.downloadTaskLogic.DeleteDownloadTask(ctx, logic.DeleteDownloadTaskParams{
-		Token:          request.GetToken(),
+		Token:          a.getAuthTokenMetadata(ctx),
 		DownloadTaskID: request.GetDownloadTaskId(),
 	})
 	if err != nil {
@@ -75,7 +108,7 @@ func (a *Handler) GetDownloadTaskFile(*morgana.GetDownloadTaskFileRequest, morga
 
 func (a Handler) GetDownloadTaskList(ctx context.Context, request *morgana.GetDownloadTaskListRequest) (*morgana.GetDownloadTaskListResponse, error) {
 	output, err := a.downloadTaskLogic.GetDownloadTaskList(ctx, logic.GetDownloadTaskListParams{
-		Token:  request.GetToken(),
+		Token:  a.getAuthTokenMetadata(ctx),
 		Offset: request.GetOffset(),
 		Limit:  request.GetLimit(),
 	})
@@ -91,7 +124,7 @@ func (a Handler) GetDownloadTaskList(ctx context.Context, request *morgana.GetDo
 
 func (a Handler) UpdateDownloadTask(ctx context.Context, request *morgana.UpdateDownloadTaskRequest) (*morgana.UpdateDownloadTaskResponse, error) {
 	output, err := a.downloadTaskLogic.UpdateDownloadTask(ctx, logic.UpdateDownloadTaskParams{
-		Token:          request.GetToken(),
+		Token:          a.getAuthTokenMetadata(ctx),
 		DownloadTaskID: request.GetDownloadTaskId(),
 		URL:            request.GetUrl(),
 	})

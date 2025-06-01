@@ -58,7 +58,7 @@ func (a accountDataAccessor) CreateAccount(ctx context.Context, account Account)
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to create account")
-		return 0, status.Errorf(codes.Internal, "failed to create account: %v", err)
+		return 0, status.Error(codes.Internal, "failed to create account")
 	}
 
 	lastInsertedID, err := result.LastInsertId()
@@ -80,7 +80,7 @@ func (a *accountDataAccessor) GetAccountByID(ctx context.Context, id uint64) (Ac
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account by id")
-		return Account{}, status.Errorf(codes.Internal, "failed to get account by id: %v", err)
+		return Account{}, status.Error(codes.Internal, "failed to get account by id")
 	}
 
 	if !found {
@@ -100,7 +100,7 @@ func (a *accountDataAccessor) GetAccountByAccountName(ctx context.Context, accou
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to get account by account name")
-		return Account{}, status.Errorf(codes.Internal, "failed to get account by account name: %v", err)
+		return Account{}, status.Error(codes.Internal, "failed to get account by account name")
 	}
 
 	if !found {

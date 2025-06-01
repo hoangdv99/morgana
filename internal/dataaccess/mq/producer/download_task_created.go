@@ -43,13 +43,13 @@ func (d downloadTaskCreatedProducer) Produce(ctx context.Context, event Download
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to marshal DownloadTaskCreated event")
-		return status.Errorf(codes.Internal, "failed to marshal DownloadTaskCreated event: %v", err)
+		return status.Error(codes.Internal, "failed to marshal DownloadTaskCreated event")
 	}
 
 	err = d.client.Produce(ctx, MessageQueueDownloadTaskCreated, eventBytes)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to produce DownloadTaskCreated event")
-		return status.Errorf(codes.Internal, "failed to produce DownloadTaskCreated event: %v", err)
+		return status.Error(codes.Internal, "failed to produce DownloadTaskCreated event")
 	}
 
 	return nil

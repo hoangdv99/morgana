@@ -58,7 +58,7 @@ func (c client) Produce(ctx context.Context, queueName string, payload []byte) e
 
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to produce message")
-		return status.Errorf(codes.Internal, "failed to produce message: %v", err)
+		return status.Error(codes.Internal, "failed to produce message")
 	}
 
 	return nil

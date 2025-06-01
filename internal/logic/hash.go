@@ -28,7 +28,7 @@ func NewHash(authConfig configs.Auth) Hash {
 func (h hash) Hash(_ context.Context, data string) (string, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(data), h.authConfig.Hash.Cost)
 	if err != nil {
-		return "", status.Errorf(codes.Internal, "failed to hash data: %+v", err)
+		return "", status.Error(codes.Internal, "failed to hash data")
 	}
 	return string(hashed), nil
 }
@@ -39,7 +39,7 @@ func (h hash) IsHashEqual(_ context.Context, data string, hash string) (bool, er
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return false, nil
 		}
-		return false, status.Errorf(codes.Internal, "failed to check if data equal hash: %+v", err)
+		return false, status.Error(codes.Internal, "failed to check if data equal hash")
 	}
 	return true, nil
 }

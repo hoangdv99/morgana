@@ -266,7 +266,7 @@
     "morganaCreateAccountRequest": {
       "type": "object",
       "properties": {
-        "username": {
+        "accountName": {
           "type": "string"
         },
         "password": {
@@ -286,9 +286,6 @@
     "morganaCreateDownloadTaskRequest": {
       "type": "object",
       "properties": {
-        "token": {
-          "type": "string"
-        },
         "downloadType": {
           "$ref": "#/definitions/morganaDownloadType"
         },
@@ -321,18 +318,12 @@
       "properties": {
         "account": {
           "$ref": "#/definitions/morganaAccount"
-        },
-        "token": {
-          "type": "string"
         }
       }
     },
     "morganaDeleteDownloadTaskRequest": {
       "type": "object",
       "properties": {
-        "token": {
-          "type": "string"
-        },
         "downloadTaskId": {
           "type": "string",
           "format": "uint64"
@@ -385,9 +376,6 @@
     "morganaGetDownloadTaskFileRequest": {
       "type": "object",
       "properties": {
-        "token": {
-          "type": "string"
-        },
         "downloadTaskId": {
           "type": "string",
           "format": "uint64"
@@ -406,9 +394,6 @@
     "morganaGetDownloadTaskListRequest": {
       "type": "object",
       "properties": {
-        "token": {
-          "type": "string"
-        },
         "offset": {
           "type": "string",
           "format": "uint64"
@@ -438,9 +423,6 @@
     "morganaUpdateDownloadTaskRequest": {
       "type": "object",
       "properties": {
-        "token": {
-          "type": "string"
-        },
         "downloadTaskId": {
           "type": "string",
           "format": "uint64"

@@ -85,7 +85,7 @@ func (c redisClient) Get(ctx context.Context, key string) (any, error) {
 			return nil, ErrCacheMiss
 		}
 		logger.With(zap.Error(err)).Error("failed to get data from cache")
-		return nil, status.Errorf(codes.Internal, "failed to get data from cache: %+v", err)
+		return nil, status.Error(codes.Internal, "failed to get data from cache")
 	}
 
 	return data, nil
@@ -114,7 +114,7 @@ func (c redisClient) Set(ctx context.Context, key string, data any, ttl time.Dur
 	err := c.redisClient.Set(ctx, key, data, ttl).Err()
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to set data in cache")
-		return status.Errorf(codes.Internal, "failed to set data in cache: %v", err)
+		return status.Error(codes.Internal, "failed to set data in cache")
 	}
 
 	return nil
