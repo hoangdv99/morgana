@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 
-	"github.com/hoangdv99/morgana/internal/generated/grpc/morgana"
+	morgana "github.com/hoangdv99/morgana/internal/generated/morgana/v1"
 	"github.com/hoangdv99/morgana/internal/logic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"

@@ -6,7 +6,7 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/validator"
 	"github.com/hoangdv99/morgana/internal/configs"
-	"github.com/hoangdv99/morgana/internal/generated/grpc/morgana"
+	morgana "github.com/hoangdv99/morgana/internal/generated/morgana/v1"
 	"github.com/hoangdv99/morgana/internal/utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

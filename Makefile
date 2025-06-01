@@ -5,15 +5,7 @@ PROJECT_NAME := morgana
 all: generate build-all
 
 generate:
-	protoc -I=. \
-		--go_out=internal/generated/ \
-		--go-grpc_out=internal/generated/ \
-		--grpc-gateway_out=internal/generated \
-		--grpc-gateway_opt generate_unbound_methods=true \
-		--openapiv2_out . \
-		--openapiv2_opt generate_unbound_methods=true \
-		--validate_out="lang=go:internal/generated" \
-		api/morgana.proto
+	buf generate api
 	wire internal/wiring/wire.go
 	
 .PHONY: build-linux-amd64

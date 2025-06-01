@@ -3,6 +3,7 @@ module github.com/hoangdv99/morgana
 go 1.24.0
 
 require (
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250425153114-8976f5be98c1.1
 	github.com/IBM/sarama v1.45.2
 	github.com/doug-martin/goqu/v9 v9.19.0
 	github.com/envoyproxy/protoc-gen-validate v1.2.1

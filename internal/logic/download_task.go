@@ -6,7 +6,7 @@ import (
 	"github.com/doug-martin/goqu/v9"
 	"github.com/hoangdv99/morgana/internal/dataaccess/database"
 	"github.com/hoangdv99/morgana/internal/dataaccess/mq/producer"
-	"github.com/hoangdv99/morgana/internal/generated/grpc/morgana"
+	morgana "github.com/hoangdv99/morgana/internal/generated/morgana/v1"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -95,7 +95,7 @@ func (d downloadTask) databaseDownloadTaskToProtoDownloadTask(
 		},
 		DownloadType:   downloadTask.DownloadType,
 		Url:            downloadTask.URL,
-		DownloadStatus: morgana.DownloadStatus_Pending,
+		DownloadStatus: morgana.DownloadStatus_DOWNLOAD_STATUS_PENDING,
 	}
 }
 
@@ -114,7 +114,7 @@ func (d downloadTask) CreateDownloadTask(ctx context.Context, params CreateDownl
 		AccountID:      accountID,
 		DownloadType:   params.DownloadType,
 		URL:            params.URL,
-		DownloadStatus: morgana.DownloadStatus_Pending,
+		DownloadStatus: morgana.DownloadStatus_DOWNLOAD_STATUS_PENDING,
 		Metadata: database.JSON{
 			Data: make(map[string]interface{}),
 		},

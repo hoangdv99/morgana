@@ -7,7 +7,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hoangdv99/morgana/internal/configs"
-	"github.com/hoangdv99/morgana/internal/generated/grpc/morgana"
+	morgana "github.com/hoangdv99/morgana/internal/generated/morgana/v1"
 	handlerGPRC "github.com/hoangdv99/morgana/internal/handler/grpc"
 	"github.com/hoangdv99/morgana/internal/handler/http/servemuxoptions"
 	"github.com/hoangdv99/morgana/internal/utils"

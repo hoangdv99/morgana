@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "api/morgana.proto",
+    "title": "morgana/v1/morgana.proto",
     "version": "version not set"
   },
   "tags": [
@@ -16,14 +16,14 @@
     "application/json"
   ],
   "paths": {
-    "/morgana.MorganaService/CreateAccount": {
+    "/morgana.v1.MorganaService/CreateAccount": {
       "post": {
         "operationId": "MorganaService_CreateAccount",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/morganaCreateAccountResponse"
+              "$ref": "#/definitions/v1CreateAccountResponse"
             }
           },
           "default": {
@@ -39,7 +39,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/morganaCreateAccountRequest"
+              "$ref": "#/definitions/v1CreateAccountRequest"
             }
           }
         ],
@@ -48,14 +48,14 @@
         ]
       }
     },
-    "/morgana.MorganaService/CreateDownloadTask": {
+    "/morgana.v1.MorganaService/CreateDownloadTask": {
       "post": {
         "operationId": "MorganaService_CreateDownloadTask",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/morganaCreateDownloadTaskResponse"
+              "$ref": "#/definitions/v1CreateDownloadTaskResponse"
             }
           },
           "default": {
@@ -71,7 +71,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/morganaCreateDownloadTaskRequest"
+              "$ref": "#/definitions/v1CreateDownloadTaskRequest"
             }
           }
         ],
@@ -80,14 +80,14 @@
         ]
       }
     },
-    "/morgana.MorganaService/CreateSession": {
+    "/morgana.v1.MorganaService/CreateSession": {
       "post": {
         "operationId": "MorganaService_CreateSession",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/morganaCreateSessionResponse"
+              "$ref": "#/definitions/v1CreateSessionResponse"
             }
           },
           "default": {
@@ -103,7 +103,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/morganaCreateSessionRequest"
+              "$ref": "#/definitions/v1CreateSessionRequest"
             }
           }
         ],
@@ -112,14 +112,14 @@
         ]
       }
     },
-    "/morgana.MorganaService/DeleteDownloadTask": {
+    "/morgana.v1.MorganaService/DeleteDownloadTask": {
       "post": {
         "operationId": "MorganaService_DeleteDownloadTask",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/morganaDeleteDownloadTaskResponse"
+              "$ref": "#/definitions/v1DeleteDownloadTaskResponse"
             }
           },
           "default": {
@@ -135,7 +135,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/morganaDeleteDownloadTaskRequest"
+              "$ref": "#/definitions/v1DeleteDownloadTaskRequest"
             }
           }
         ],
@@ -144,7 +144,7 @@
         ]
       }
     },
-    "/morgana.MorganaService/GetDownloadTaskFile": {
+    "/morgana.v1.MorganaService/GetDownloadTaskFile": {
       "post": {
         "operationId": "MorganaService_GetDownloadTaskFile",
         "responses": {
@@ -154,13 +154,13 @@
               "type": "object",
               "properties": {
                 "result": {
-                  "$ref": "#/definitions/morganaGetDownloadTaskFileResponse"
+                  "$ref": "#/definitions/v1GetDownloadTaskFileResponse"
                 },
                 "error": {
                   "$ref": "#/definitions/rpcStatus"
                 }
               },
-              "title": "Stream result of morganaGetDownloadTaskFileResponse"
+              "title": "Stream result of v1GetDownloadTaskFileResponse"
             }
           },
           "default": {
@@ -176,7 +176,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/morganaGetDownloadTaskFileRequest"
+              "$ref": "#/definitions/v1GetDownloadTaskFileRequest"
             }
           }
         ],
@@ -185,14 +185,14 @@
         ]
       }
     },
-    "/morgana.MorganaService/GetDownloadTaskList": {
+    "/morgana.v1.MorganaService/GetDownloadTaskList": {
       "post": {
         "operationId": "MorganaService_GetDownloadTaskList",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/morganaGetDownloadTaskListResponse"
+              "$ref": "#/definitions/v1GetDownloadTaskListResponse"
             }
           },
           "default": {
@@ -208,7 +208,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/morganaGetDownloadTaskListRequest"
+              "$ref": "#/definitions/v1GetDownloadTaskListRequest"
             }
           }
         ],
@@ -217,14 +217,14 @@
         ]
       }
     },
-    "/morgana.MorganaService/UpdateDownloadTask": {
+    "/morgana.v1.MorganaService/UpdateDownloadTask": {
       "post": {
         "operationId": "MorganaService_UpdateDownloadTask",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/morganaUpdateDownloadTaskResponse"
+              "$ref": "#/definitions/v1UpdateDownloadTaskResponse"
             }
           },
           "default": {
@@ -240,7 +240,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/morganaUpdateDownloadTaskRequest"
+              "$ref": "#/definitions/v1UpdateDownloadTaskRequest"
             }
           }
         ],
@@ -251,195 +251,6 @@
     }
   },
   "definitions": {
-    "morganaAccount": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "accountName": {
-          "type": "string"
-        }
-      }
-    },
-    "morganaCreateAccountRequest": {
-      "type": "object",
-      "properties": {
-        "accountName": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        }
-      }
-    },
-    "morganaCreateAccountResponse": {
-      "type": "object",
-      "properties": {
-        "accountId": {
-          "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
-    "morganaCreateDownloadTaskRequest": {
-      "type": "object",
-      "properties": {
-        "downloadType": {
-          "$ref": "#/definitions/morganaDownloadType"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "morganaCreateDownloadTaskResponse": {
-      "type": "object",
-      "properties": {
-        "downloadTask": {
-          "$ref": "#/definitions/morganaDownloadTask"
-        }
-      }
-    },
-    "morganaCreateSessionRequest": {
-      "type": "object",
-      "properties": {
-        "accountName": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        }
-      }
-    },
-    "morganaCreateSessionResponse": {
-      "type": "object",
-      "properties": {
-        "account": {
-          "$ref": "#/definitions/morganaAccount"
-        }
-      }
-    },
-    "morganaDeleteDownloadTaskRequest": {
-      "type": "object",
-      "properties": {
-        "downloadTaskId": {
-          "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
-    "morganaDeleteDownloadTaskResponse": {
-      "type": "object"
-    },
-    "morganaDownloadStatus": {
-      "type": "string",
-      "enum": [
-        "UndefinedStatus",
-        "Pending",
-        "Downloading",
-        "Failed",
-        "Success"
-      ],
-      "default": "UndefinedStatus"
-    },
-    "morganaDownloadTask": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "account": {
-          "$ref": "#/definitions/morganaAccount"
-        },
-        "downloadType": {
-          "$ref": "#/definitions/morganaDownloadType"
-        },
-        "url": {
-          "type": "string"
-        },
-        "downloadStatus": {
-          "$ref": "#/definitions/morganaDownloadStatus"
-        }
-      }
-    },
-    "morganaDownloadType": {
-      "type": "string",
-      "enum": [
-        "UndefinedType",
-        "HTTP"
-      ],
-      "default": "UndefinedType"
-    },
-    "morganaGetDownloadTaskFileRequest": {
-      "type": "object",
-      "properties": {
-        "downloadTaskId": {
-          "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
-    "morganaGetDownloadTaskFileResponse": {
-      "type": "object",
-      "properties": {
-        "data": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "morganaGetDownloadTaskListRequest": {
-      "type": "object",
-      "properties": {
-        "offset": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "limit": {
-          "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
-    "morganaGetDownloadTaskListResponse": {
-      "type": "object",
-      "properties": {
-        "downloadTaskList": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/morganaDownloadTask"
-          }
-        },
-        "toalDownloadTaskCount": {
-          "type": "string",
-          "format": "uint64"
-        }
-      }
-    },
-    "morganaUpdateDownloadTaskRequest": {
-      "type": "object",
-      "properties": {
-        "downloadTaskId": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "url": {
-          "type": "string"
-        }
-      }
-    },
-    "morganaUpdateDownloadTaskResponse": {
-      "type": "object",
-      "properties": {
-        "downloadTask": {
-          "$ref": "#/definitions/morganaDownloadTask"
-        }
-      }
-    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -465,6 +276,195 @@
             "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
+        }
+      }
+    },
+    "v1Account": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "accountName": {
+          "type": "string"
+        }
+      }
+    },
+    "v1CreateAccountRequest": {
+      "type": "object",
+      "properties": {
+        "accountName": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "v1CreateAccountResponse": {
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1CreateDownloadTaskRequest": {
+      "type": "object",
+      "properties": {
+        "downloadType": {
+          "$ref": "#/definitions/v1DownloadType"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "v1CreateDownloadTaskResponse": {
+      "type": "object",
+      "properties": {
+        "downloadTask": {
+          "$ref": "#/definitions/v1DownloadTask"
+        }
+      }
+    },
+    "v1CreateSessionRequest": {
+      "type": "object",
+      "properties": {
+        "accountName": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "v1CreateSessionResponse": {
+      "type": "object",
+      "properties": {
+        "account": {
+          "$ref": "#/definitions/v1Account"
+        }
+      }
+    },
+    "v1DeleteDownloadTaskRequest": {
+      "type": "object",
+      "properties": {
+        "downloadTaskId": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1DeleteDownloadTaskResponse": {
+      "type": "object"
+    },
+    "v1DownloadStatus": {
+      "type": "string",
+      "enum": [
+        "DOWNLOAD_STATUS_UNSPECIFIED",
+        "DOWNLOAD_STATUS_PENDING",
+        "DOWNLOAD_STATUS_DOWNLOADING",
+        "DOWNLOAD_STATUS_FAILED",
+        "DOWNLOAD_STATUS_SUCCESS"
+      ],
+      "default": "DOWNLOAD_STATUS_UNSPECIFIED"
+    },
+    "v1DownloadTask": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "account": {
+          "$ref": "#/definitions/v1Account"
+        },
+        "downloadType": {
+          "$ref": "#/definitions/v1DownloadType"
+        },
+        "url": {
+          "type": "string"
+        },
+        "downloadStatus": {
+          "$ref": "#/definitions/v1DownloadStatus"
+        }
+      }
+    },
+    "v1DownloadType": {
+      "type": "string",
+      "enum": [
+        "DOWNLOAD_TYPE_UNSPECIFIED",
+        "DOWNLOAD_TYPE_HTTP"
+      ],
+      "default": "DOWNLOAD_TYPE_UNSPECIFIED"
+    },
+    "v1GetDownloadTaskFileRequest": {
+      "type": "object",
+      "properties": {
+        "downloadTaskId": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1GetDownloadTaskFileResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "v1GetDownloadTaskListRequest": {
+      "type": "object",
+      "properties": {
+        "offset": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "limit": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1GetDownloadTaskListResponse": {
+      "type": "object",
+      "properties": {
+        "downloadTaskList": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1DownloadTask"
+          }
+        },
+        "toalDownloadTaskCount": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "v1UpdateDownloadTaskRequest": {
+      "type": "object",
+      "properties": {
+        "downloadTaskId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "v1UpdateDownloadTaskResponse": {
+      "type": "object",
+      "properties": {
+        "downloadTask": {
+          "$ref": "#/definitions/v1DownloadTask"
         }
       }
     }
