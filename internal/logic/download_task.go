@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/hoangdv99/morgana/internal/dataaccess/database"
@@ -14,6 +15,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+const (
+	downloadTaskMetadataFieldNameFileName = "file-name"
 )
 
 type CreateDownloadTaskParams struct {
@@ -52,12 +57,18 @@ type DeleteDownloadTaskParams struct {
 	DownloadTaskID uint64
 }
 
+type GetDownloadTaskFileParams struct {
+	Token          string
+	DownloadTaskID uint64
+}
+
 type DownloadTask interface {
 	CreateDownloadTask(ctx context.Context, params CreateDownloadTaskParams) (CreateDownloadTaskOutput, error)
 	GetDownloadTaskList(ctx context.Context, params GetDownloadTaskListParams) (GetDownloadTaskListOutput, error)
 	UpdateDownloadTask(ctx context.Context, params UpdateDownloadTaskParams) (UpdateDownloadTaskOutput, error)
 	DeleteDownloadTask(ctx context.Context, params DeleteDownloadTaskParams) error
 	ExecuteDownloadTask(ctx context.Context, id uint64) error
+	GetDownloadTaskFile(ctx context.Context, params GetDownloadTaskFileParams) (io.ReadCloser, error)
 }
 
 type downloadTask struct {
@@ -328,4 +339,39 @@ func (d downloadTask) ExecuteDownloadTask(ctx context.Context, id uint64) error 
 	logger.Info("download task executed successfully")
 
 	return nil
+}
+
+func (d downloadTask) GetDownloadTaskFile(
+	ctx context.Context,
+	params GetDownloadTaskFileParams,
+) (io.ReadCloser, error) {
+	accountID, _, err := d.tokenLogic.GetAccountIDAndExpireTime(ctx, params.Token)
+	if err != nil {
+		return nil, err
+	}
+
+	downloadTask, err := d.downloadTaskDataAccessor.GetDownloadTask(ctx, params.DownloadTaskID)
+	if err != nil {
+		return nil, err
+	}
+
+	if downloadTask.AccountID != accountID {
+		return nil, status.Error(codes.PermissionDenied, "trying to get file of a download task the account does not own")
+	}
+
+	if downloadTask.DownloadStatus != morgana.DownloadStatus_DOWNLOAD_STATUS_SUCCESS {
+		return nil, status.Error(codes.InvalidArgument, "download task does not have status of success")
+	}
+
+	downloadTaskMetadata, ok := downloadTask.Metadata.Data.(map[string]any)
+	if !ok {
+		return nil, status.Error(codes.Internal, "download task metadata is not a map[string]any")
+	}
+
+	fileName, ok := downloadTaskMetadata[downloadTaskMetadataFieldNameFileName]
+	if !ok {
+		return nil, status.Error(codes.Internal, "download task metadata does not contain file name")
+	}
+
+	return d.fileClient.Read(ctx, fileName.(string))
 }

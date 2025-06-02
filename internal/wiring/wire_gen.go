@@ -76,8 +76,13 @@ func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(
 		return nil, nil, err
 	}
 	downloadTask := logic.NewDownloadTask(token, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, goquDatabase, fileClient, logger)
-	morganaServiceServer := grpc.NewHandler(account, downloadTask)
 	configsGRPC := config.GRPC
+	morganaServiceServer, err := grpc.NewHandler(account, downloadTask, configsGRPC)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
 	server := grpc.NewServer(morganaServiceServer, configsGRPC, logger)
 	configsHTTP := config.HTTP
 	httpServer := http.NewServer(configsGRPC, configsHTTP, auth, logger)

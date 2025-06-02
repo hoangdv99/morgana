@@ -2,7 +2,10 @@ package grpc
 
 import (
 	"context"
+	"errors"
+	"io"
 
+	"github.com/hoangdv99/morgana/internal/configs"
 	morgana "github.com/hoangdv99/morgana/internal/generated/morgana/v1"
 	"github.com/hoangdv99/morgana/internal/logic"
 	"google.golang.org/grpc"
@@ -16,15 +19,22 @@ const (
 
 type Handler struct {
 	morgana.UnimplementedMorganaServiceServer
-	accountLogic      logic.Account
-	downloadTaskLogic logic.DownloadTask
+	accountLogic                                 logic.Account
+	downloadTaskLogic                            logic.DownloadTask
+	getDownloadTaskFileResponseBufferSizeInBytes uint64
 }
 
-func NewHandler(accountLogic logic.Account, downloadTaskLogic logic.DownloadTask) morgana.MorganaServiceServer {
+func NewHandler(accountLogic logic.Account, downloadTaskLogic logic.DownloadTask, grpcConfig configs.GRPC) (morgana.MorganaServiceServer, error) {
+	getDownloadTaskFileResponseBufferSizeInBytes, err := grpcConfig.GetDownloadTaskFile.GetResponseBufferSizeInBytes()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Handler{
 		accountLogic:      accountLogic,
 		downloadTaskLogic: downloadTaskLogic,
-	}
+		getDownloadTaskFileResponseBufferSizeInBytes: getDownloadTaskFileResponseBufferSizeInBytes,
+	}, nil
 }
 
 func (a Handler) CreateAccount(ctx context.Context, request *morgana.CreateAccountRequest) (*morgana.CreateAccountResponse, error) {
@@ -101,9 +111,38 @@ func (a Handler) DeleteDownloadTask(ctx context.Context, request *morgana.Delete
 	return &morgana.DeleteDownloadTaskResponse{}, nil
 }
 
-// GetDownloadTaskFile implements morgana.GoLoadServiceServer.
-func (a *Handler) GetDownloadTaskFile(*morgana.GetDownloadTaskFileRequest, morgana.MorganaService_GetDownloadTaskFileServer) error {
-	panic("unimplemented")
+func (a Handler) GetDownloadTaskFile(request *morgana.GetDownloadTaskFileRequest, server morgana.MorganaService_GetDownloadTaskFileServer) error {
+	outputReader, err := a.downloadTaskLogic.GetDownloadTaskFile(server.Context(), logic.GetDownloadTaskFileParams{
+		Token:          a.getAuthTokenMetadata(server.Context()),
+		DownloadTaskID: request.GetDownloadTaskId(),
+	})
+	if err != nil {
+		return err
+	}
+
+	defer outputReader.Close()
+
+	for {
+		dataBuffer := make([]byte, a.getDownloadTaskFileResponseBufferSizeInBytes)
+		readByteCount, readErr := outputReader.Read(dataBuffer)
+		if readByteCount > 0 {
+			sendErr := server.Send(&morgana.GetDownloadTaskFileResponse{
+				Data: dataBuffer[:readByteCount],
+			})
+			if sendErr != nil {
+				return sendErr
+			}
+			continue
+		}
+		if readErr != nil {
+			if errors.Is(readErr, io.EOF) {
+				break
+			}
+			return readErr
+		}
+	}
+
+	return nil
 }
 
 func (a Handler) GetDownloadTaskList(ctx context.Context, request *morgana.GetDownloadTaskListRequest) (*morgana.GetDownloadTaskListResponse, error) {
