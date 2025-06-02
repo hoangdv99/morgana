@@ -13,6 +13,7 @@ import (
 	"github.com/hoangdv99/morgana/internal/dataaccess"
 	"github.com/hoangdv99/morgana/internal/dataaccess/cache"
 	"github.com/hoangdv99/morgana/internal/dataaccess/database"
+	"github.com/hoangdv99/morgana/internal/dataaccess/file"
 	"github.com/hoangdv99/morgana/internal/dataaccess/mq/consumer"
 	"github.com/hoangdv99/morgana/internal/dataaccess/mq/producer"
 	"github.com/hoangdv99/morgana/internal/handler"
@@ -67,13 +68,20 @@ func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(
 		return nil, nil, err
 	}
 	downloadTaskCreatedProducer := producer.NewDownloadTaskCreatedProducer(producerClient, logger)
-	downloadTask := logic.NewDownloadTask(token, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, goquDatabase, logger)
+	download := config.Download
+	fileClient, err := file.NewClient(download, logger)
+	if err != nil {
+		cleanup2()
+		cleanup()
+		return nil, nil, err
+	}
+	downloadTask := logic.NewDownloadTask(token, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, goquDatabase, fileClient, logger)
 	morganaServiceServer := grpc.NewHandler(account, downloadTask)
 	configsGRPC := config.GRPC
 	server := grpc.NewServer(morganaServiceServer, configsGRPC, logger)
 	configsHTTP := config.HTTP
 	httpServer := http.NewServer(configsGRPC, configsHTTP, auth, logger)
-	downloadTaskCreated := consumers.NewDownloadTaskCreated(logger)
+	downloadTaskCreated := consumers.NewDownloadTaskCreated(downloadTask, logger)
 	consumerConsumer, err := consumer.NewConsumer(mq, logger)
 	if err != nil {
 		cleanup2()

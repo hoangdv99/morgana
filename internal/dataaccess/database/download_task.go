@@ -26,7 +26,7 @@ const (
 
 type DownloadTask struct {
 	ID             uint64                 `db:"id" goqu:"skipinsert,skipupdate"`
-	AccountID      uint64                 `db:"account_id" goqu:"skipinsert,skipupdate"`
+	AccountID      uint64                 `db:"account_id" goqu:"skipupdate"`
 	DownloadType   morgana.DownloadType   `db:"download_type"`
 	URL            string                 `db:"url"`
 	DownloadStatus morgana.DownloadStatus `db:"download_status"`

@@ -7,4 +7,5 @@ var WireSet = wire.NewSet(
 	NewHash,
 	NewToken,
 	NewDownloadTask,
+	NewHTTPDownloader,
 )
