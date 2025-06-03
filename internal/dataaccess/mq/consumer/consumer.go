@@ -19,9 +19,52 @@ type Consumer interface {
 	Start(ctx context.Context) error
 }
 type consumer struct {
-	saramaConsumer            sarama.Consumer
+	saramaConsumer            sarama.ConsumerGroup
 	queueNameToHandlerFuncMap map[string]HandlerFunc
 	logger                    *zap.Logger
+}
+
+type consumerHandler struct {
+	handlerFunc       HandlerFunc
+	exitSignalChannel chan os.Signal
+}
+
+func newConsumerHanler(
+	handlerFunc HandlerFunc,
+	exitSignalChannel chan os.Signal,
+) *consumerHandler {
+	return &consumerHandler{
+		handlerFunc:       handlerFunc,
+		exitSignalChannel: exitSignalChannel,
+	}
+}
+
+func (h consumerHandler) Setup(sarama.ConsumerGroupSession) error {
+	return nil
+}
+
+func (h consumerHandler) Cleanup(sarama.ConsumerGroupSession) error {
+	return nil
+}
+
+func (h consumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for {
+		select {
+		case message, ok := <-claim.Messages():
+			if !ok {
+				session.Commit()
+				return nil
+			}
+
+			if err := h.handlerFunc(session.Context(), message.Topic, message.Value); err != nil {
+				return err
+			}
+
+		case <-h.exitSignalChannel:
+			session.Commit()
+			break
+		}
+	}
 }
 
 func newSaramaConfig(mqConfig configs.MQ) *sarama.Config {
@@ -36,7 +79,7 @@ func NewConsumer(
 	mqConfig configs.MQ,
 	logger *zap.Logger,
 ) (Consumer, error) {
-	saramaConsumer, err := sarama.NewConsumer(mqConfig.Addresses, newSaramaConfig(mqConfig))
+	saramaConsumer, err := sarama.NewConsumerGroup(mqConfig.Addresses, mqConfig.ClientID, newSaramaConfig(mqConfig))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create sarama consumer: %w", err)
 	}
@@ -52,27 +95,6 @@ func (c *consumer) RegisterHandler(queueName string, handlerFunc HandlerFunc) {
 	c.queueNameToHandlerFuncMap[queueName] = handlerFunc
 }
 
-func (c consumer) consume(queueName string, handlerFunc HandlerFunc, exitSignalChannel chan os.Signal) error {
-	logger := c.logger.With(zap.String("queue_name", queueName))
-
-	partitionConsumer, err := c.saramaConsumer.ConsumePartition(queueName, 0, sarama.OffsetOldest)
-	if err != nil {
-		return fmt.Errorf("failed to create sarama partition consumer: %w", err)
-	}
-
-	for {
-		select {
-		case message := <-partitionConsumer.Messages():
-			err = handlerFunc(context.Background(), queueName, message.Value)
-			if err != nil {
-				logger.With(zap.Error(err)).Error("failed to handle message")
-			}
-		case <-exitSignalChannel:
-			return nil
-		}
-	}
-}
-
 func (c consumer) Start(ctx context.Context) error {
 	logger := utils.LoggerWithContext(ctx, c.logger)
 
@@ -81,7 +103,11 @@ func (c consumer) Start(ctx context.Context) error {
 
 	for queueName, handlerFunc := range c.queueNameToHandlerFuncMap {
 		go func(queueName string, handlerFunc HandlerFunc) {
-			err := c.consume(queueName, handlerFunc, exitSignalChannel)
+			err := c.saramaConsumer.Consume(
+				context.Background(),
+				[]string{queueName},
+				newConsumerHanler(handlerFunc, exitSignalChannel),
+			)
 			if err != nil {
 				logger.
 					With(zap.String("queue_name", queueName)).

@@ -64,9 +64,9 @@ build:
 clean:
 	rm -rf build/
 
-.PHONY: run-server
-run-server:
-	go run cmd/$(PROJECT_NAME)/*.go server
+.PHONY: run-standalone-server
+run-standalone-server:
+	go run cmd/$(PROJECT_NAME)/*.go standalone-server
 
 .PHONY: lint
 lint:

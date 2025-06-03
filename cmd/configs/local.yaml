@@ -31,3 +31,10 @@ download:
   address: "127.0.0.1:9000"
   username: "root"
   password: "rootpass"
+cron:
+  execute_all_pending_download_task:
+    schedule: "@every 1m"
+    concurrency_limit: 8
+  update_downloading_and_failed_download_task_status_to_pending:
+    schedule: "@every 30m"
+    

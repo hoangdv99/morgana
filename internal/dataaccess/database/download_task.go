@@ -41,6 +41,8 @@ type DownloadTaskDataAccessor interface {
 	GetDownloadTaskWithXLock(ctx context.Context, id uint64) (DownloadTask, error)
 	UpdateDownloadTask(ctx context.Context, task DownloadTask) error
 	DeleteDownloadTask(ctx context.Context, id uint64) error
+	GetPendingDownloadTaskIDList(ctx context.Context) ([]uint64, error)
+	UpdateDownloadingAndFailedDownloadTaskStatusToPending(ctx context.Context) error
 	WithDatabase(database Database) DownloadTaskDataAccessor
 }
 
@@ -192,6 +194,46 @@ func (d downloadTaskDataAccessor) GetDownloadTaskWithXLock(ctx context.Context, 
 	}
 
 	return downloadTask, nil
+}
+
+func (d downloadTaskDataAccessor) GetPendingDownloadTaskIDList(ctx context.Context) ([]uint64, error) {
+	logger := utils.LoggerWithContext(ctx, d.logger)
+
+	downloadTaskIDList := make([]uint64, 0)
+	err := d.database.
+		Select(ColNameDownloadTaskID).
+		From(TabNameDownloadTasks).
+		Where(goqu.Ex{
+			ColNameDownloadTaskDownloadStatus: morgana.DownloadStatus_DOWNLOAD_STATUS_PENDING,
+		}).
+		ScanValsContext(ctx, &downloadTaskIDList)
+
+	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get pending download task id list")
+		return nil, status.Error(codes.Internal, "failed to get pending download task id list")
+	}
+
+	return downloadTaskIDList, nil
+}
+
+func (d downloadTaskDataAccessor) UpdateDownloadingAndFailedDownloadTaskStatusToPending(ctx context.Context) error {
+	logger := utils.LoggerWithContext(ctx, d.logger)
+
+	if _, err := d.database.
+		Update(TabNameDownloadTasks).
+		Set(goqu.Record{
+			ColNameDownloadTaskDownloadStatus: morgana.DownloadStatus_DOWNLOAD_STATUS_PENDING,
+		}).
+		Where(
+			goqu.C(ColNameDownloadTaskDownloadStatus).
+				In(morgana.DownloadStatus_DOWNLOAD_STATUS_PENDING, morgana.DownloadStatus_DOWNLOAD_STATUS_FAILED),
+		).Executor().
+		ExecContext(ctx); err != nil {
+		logger.With(zap.Error(err)).Error("failed to update downloading and failed download task status to pending")
+		return status.Error(codes.Internal, "failed to update downloading and failed download task status to pending")
+	}
+
+	return nil
 }
 
 func (d downloadTaskDataAccessor) WithDatabase(database Database) DownloadTaskDataAccessor {

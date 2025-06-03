@@ -19,6 +19,7 @@ type Config struct {
 	Cache    Cache    `yaml:"cache"`
 	MQ       MQ       `yaml:"mq"`
 	Download Download `yaml:"download"`
+	Cron     Cron     `yaml:"cron"`
 }
 
 func NewConfig(filePath ConfigFilePath) (Config, error) {

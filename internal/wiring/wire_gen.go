@@ -20,13 +20,14 @@ import (
 	"github.com/hoangdv99/morgana/internal/handler/consumers"
 	"github.com/hoangdv99/morgana/internal/handler/grpc"
 	"github.com/hoangdv99/morgana/internal/handler/http"
+	"github.com/hoangdv99/morgana/internal/handler/jobs"
 	"github.com/hoangdv99/morgana/internal/logic"
 	"github.com/hoangdv99/morgana/internal/utils"
 )
 
 // Injectors from wire.go:
 
-func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(), error) {
+func InitializeStandaloneServer(configFilePath configs.ConfigFilePath) (*app.StandaloneServer, func(), error) {
 	config, err := configs.NewConfig(configFilePath)
 	if err != nil {
 		return nil, nil, err
@@ -75,7 +76,8 @@ func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(
 		cleanup()
 		return nil, nil, err
 	}
-	downloadTask := logic.NewDownloadTask(token, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, goquDatabase, fileClient, logger)
+	cron := config.Cron
+	downloadTask := logic.NewDownloadTask(token, accountDataAccessor, downloadTaskDataAccessor, downloadTaskCreatedProducer, goquDatabase, fileClient, logger, cron)
 	configsGRPC := config.GRPC
 	morganaServiceServer, err := grpc.NewHandler(account, downloadTask, configsGRPC)
 	if err != nil {
@@ -94,8 +96,10 @@ func InitializeServer(configFilePath configs.ConfigFilePath) (*app.Server, func(
 		return nil, nil, err
 	}
 	root := consumers.NewRoot(downloadTaskCreated, consumerConsumer, logger)
-	appServer := app.NewServer(server, httpServer, root, logger)
-	return appServer, func() {
+	executeAllPendingDownloadTask := jobs.NewExecuteAllPendingDownloadTask(downloadTask)
+	updateDownloadingAndFailedDownloadTaskStatusToPending := jobs.NewUpdateDownloadingAndFailedDownloadTaskStatusToPending(downloadTask)
+	standaloneServer := app.NewStandaloneServer(server, httpServer, root, executeAllPendingDownloadTask, updateDownloadingAndFailedDownloadTaskStatusToPending, logger, cron)
+	return standaloneServer, func() {
 		cleanup2()
 		cleanup()
 	}, nil

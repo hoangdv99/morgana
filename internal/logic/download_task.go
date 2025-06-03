@@ -6,6 +6,8 @@ import (
 	"io"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/gammazero/workerpool"
+	"github.com/hoangdv99/morgana/internal/configs"
 	"github.com/hoangdv99/morgana/internal/dataaccess/database"
 	"github.com/hoangdv99/morgana/internal/dataaccess/file"
 	"github.com/hoangdv99/morgana/internal/dataaccess/mq/producer"
@@ -69,6 +71,8 @@ type DownloadTask interface {
 	DeleteDownloadTask(ctx context.Context, params DeleteDownloadTaskParams) error
 	ExecuteDownloadTask(ctx context.Context, id uint64) error
 	GetDownloadTaskFile(ctx context.Context, params GetDownloadTaskFileParams) (io.ReadCloser, error)
+	ExecuteAllPendingDownloadTask(ctx context.Context) error
+	UpdateDownloadingAndFailedDownloadTaskStatusToPending(ctx context.Context) error
 }
 
 type downloadTask struct {
@@ -79,6 +83,7 @@ type downloadTask struct {
 	goquDatabase                *goqu.Database
 	fileClient                  file.Client
 	logger                      *zap.Logger
+	cronConfig                  configs.Cron
 }
 
 func NewDownloadTask(
@@ -89,6 +94,7 @@ func NewDownloadTask(
 	goquDatabase *goqu.Database,
 	fileClient file.Client,
 	logger *zap.Logger,
+	cronConfig configs.Cron,
 ) DownloadTask {
 	return &downloadTask{
 		tokenLogic:                  tokenLogic,
@@ -98,6 +104,7 @@ func NewDownloadTask(
 		goquDatabase:                goquDatabase,
 		fileClient:                  fileClient,
 		logger:                      logger,
+		cronConfig:                  cronConfig,
 	}
 }
 
@@ -308,12 +315,15 @@ func (d downloadTask) ExecuteDownloadTask(ctx context.Context, id uint64) error 
 		downloader = NewHTTPDownloader(downloadTask.URL, d.logger)
 	default:
 		logger.With(zap.Any("download_type", downloadTask.DownloadType)).Error("unsupported download type")
+		d.updateDownloadTaskStatusToFailed(ctx, downloadTask)
 		return nil
 	}
 
 	fileName := fmt.Sprintf("download_file_%d", id)
 	fileWriteCloser, err := d.fileClient.Write(ctx, fileName)
 	if err != nil {
+		logger.With(zap.Error(err)).Error("failed to get download file writer")
+		d.updateDownloadTaskStatusToFailed(ctx, downloadTask)
 		return err
 	}
 
@@ -322,6 +332,7 @@ func (d downloadTask) ExecuteDownloadTask(ctx context.Context, id uint64) error 
 	metadata, err := downloader.Download(ctx, fileWriteCloser)
 	if err != nil {
 		logger.With(zap.Error(err)).Error("failed to download")
+		d.updateDownloadTaskStatusToFailed(ctx, downloadTask)
 		return err
 	}
 
@@ -374,4 +385,53 @@ func (d downloadTask) GetDownloadTaskFile(
 	}
 
 	return d.fileClient.Read(ctx, fileName.(string))
+}
+
+func (d downloadTask) ExecuteAllPendingDownloadTask(ctx context.Context) error {
+	logger := utils.LoggerWithContext(ctx, d.logger)
+
+	pendingDownloadTaskIDList, err := d.downloadTaskDataAccessor.GetPendingDownloadTaskIDList(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(pendingDownloadTaskIDList) == 0 {
+		logger.Info("no pending download task found")
+		return nil
+	}
+
+	logger.
+		With(zap.Int("len(pending_download_task_id_list)", len(pendingDownloadTaskIDList))).
+		Info("pending download task found")
+
+	workerPool := workerpool.New(d.cronConfig.ExecuteAllPendingDownloadTask.ConcurrencyLimit)
+	for _, id := range pendingDownloadTaskIDList {
+		workerPool.Submit(func() {
+			executeDownloadTaskErr := d.ExecuteDownloadTask(ctx, id)
+			if executeDownloadTaskErr != nil {
+				logger.
+					With(zap.Uint64("download_task_id", id)).
+					With(zap.Error(executeDownloadTaskErr)).
+					Error("failed to execute download_task")
+			}
+		})
+	}
+
+	workerPool.StopWait()
+
+	return nil
+}
+
+func (d downloadTask) updateDownloadTaskStatusToFailed(ctx context.Context, downloadTask database.DownloadTask) {
+	logger := utils.LoggerWithContext(ctx, d.logger).With(zap.Uint64("id", downloadTask.ID))
+
+	downloadTask.DownloadStatus = morgana.DownloadStatus_DOWNLOAD_STATUS_FAILED
+	updateDownloadTaskErr := d.downloadTaskDataAccessor.UpdateDownloadTask(ctx, downloadTask)
+	if updateDownloadTaskErr != nil {
+		logger.With(zap.Error(updateDownloadTaskErr)).Warn("failed to update download task status to failed")
+	}
+}
+
+func (d downloadTask) UpdateDownloadingAndFailedDownloadTaskStatusToPending(ctx context.Context) error {
+	return d.downloadTaskDataAccessor.UpdateDownloadingAndFailedDownloadTaskStatusToPending(ctx)
 }
