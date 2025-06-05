@@ -166,13 +166,13 @@ func (t token) GetAccountIDAndExpireTime(ctx context.Context, token string) (uin
 			return nil, errCannotGetTokensClaims
 		}
 
-		tokenPublicKeyID, ok := claims["kid"].(uint64)
+		tokenPublicKeyID, ok := claims["kid"].(float64)
 		if !ok {
 			logger.Error("failed to get token public key id from claims")
 			return nil, errCannotGetTokensKidClaim
 		}
 
-		return t.getJWTPublicKey(ctx, tokenPublicKeyID)
+		return t.getJWTPublicKey(ctx, uint64(tokenPublicKeyID))
 	})
 
 	if err != nil {

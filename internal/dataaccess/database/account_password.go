@@ -16,7 +16,7 @@ var (
 )
 
 const (
-	ColNameAccountPasswordsAccountID = "of_account_id"
+	ColNameAccountPasswordsAccountID = "account_id"
 	ColNameAccountPasswordsHash      = "hash"
 )
 
